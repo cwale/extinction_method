@@ -18,7 +18,7 @@
     body {
       min-height: 100dvh;
       background: #000;
-      color: #7a1a00;
+      color: #b72700;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       -webkit-text-size-adjust: 100%;
       display: flex;
@@ -29,7 +29,7 @@
     #notice {
       background: #050100;
       border-bottom: 1px solid #200800;
-      color: #7a1a00;
+      color: #b72700;
       font-size: 13px;
       font-weight: 300;
       padding: 10px 24px;
@@ -42,7 +42,7 @@
     #notice-x {
       background: none;
       border: none;
-      color: #7a1a00;
+      color: #b72700;
       font-size: 18px;
       cursor: pointer;
       flex-shrink: 0;
@@ -65,7 +65,7 @@
       align-items: center;
       padding: 6px 20px;
       padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
-      color: #7a1a00;
+      color: #b72700;
     }
 
     #wakeLbl {
@@ -119,7 +119,7 @@
       font-size: 16px;
       font-weight: 300;
       line-height: 1.5;
-      color: #7a1a00;
+      color: #b72700;
       text-align: center;
     }
 
@@ -130,9 +130,9 @@
       justify-content: center;
       width: 100%;
       height: 56px;
-      border: 1px solid #5a1400;
+      border: 1px solid #872000;
       background: transparent;
-      color: #8f2000;
+      color: #d73000;
       font-family: inherit;
       font-size: 18px;
       font-weight: 400;
@@ -145,7 +145,7 @@
       appearance: none;
     }
     .btn:active { background: #1a0500; }
-    .btn:focus-visible { outline: 1px solid #5a1400; outline-offset: 2px; }
+    .btn:focus-visible { outline: 1px solid #872000; outline-offset: 2px; }
 
     .stack { display: flex; flex-direction: column; gap: 16px; width: 100%; }
 
@@ -165,7 +165,6 @@
       font-size: 26px;
       font-weight: 200;
       font-variant-numeric: tabular-nums;
-      opacity: 0.65;
       text-align: center;
       line-height: 1;
       cursor: pointer;
@@ -179,7 +178,7 @@
     .ico {
       background: none;
       border: none;
-      color: #7a1a00;
+      color: #b72700;
       font-size: 48px;
       cursor: pointer;
       padding: 4px 8px;
@@ -195,7 +194,7 @@
       font-size: 22px;
       letter-spacing: 0.08em;
     }
-    .ico:focus-visible { outline: 1px solid #7a1a00; border-radius: 2px; }
+    .ico:focus-visible { outline: 1px solid #b72700; border-radius: 2px; }
 
     /* pulse animation */
     @keyframes bg-pulse {
@@ -430,9 +429,14 @@
   function doReset() {
     stopTick();
     unlockScreen();
+    if (t0 !== null) {
+      wakeNum++;
+      saveWake();
+      wkLbl.textContent = `Wake ${wakeNum}`;
+    }
     iIdx = 0; checks = 0; t0 = null;
     go('idle');
-    say('Reset. Ready to start.');
+    say('Reset.');
   }
 
   function startCountdown() {
@@ -554,11 +558,11 @@
     c.width = c.height = 192;
     const x = c.getContext('2d');
     x.fillStyle = '#000'; x.fillRect(0, 0, 192, 192);
-    x.strokeStyle = '#7a1a00'; x.lineWidth = 8; x.lineCap = 'round';
+    x.strokeStyle = '#b72700'; x.lineWidth = 8; x.lineCap = 'round';
     x.beginPath(); x.arc(96, 96, 72, 0, Math.PI * 2); x.stroke();
     x.beginPath(); x.moveTo(96, 96); x.lineTo(96, 38); x.stroke();
     x.beginPath(); x.moveTo(96, 96); x.lineTo(136, 96); x.stroke();
-    x.fillStyle = '#7a1a00';
+    x.fillStyle = '#b72700';
     x.beginPath(); x.arc(96, 96, 6, 0, Math.PI * 2); x.fill();
     const icon = c.toDataURL();
     const li = document.createElement('link');
