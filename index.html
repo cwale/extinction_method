@@ -146,9 +146,9 @@
       background: none;
       border: none;
       color: #3d0d00;
-      font-size: 16px;
+      font-size: 32px;
       cursor: pointer;
-      padding: 12px 10px;
+      padding: 8px 10px;
       -webkit-tap-highlight-color: transparent;
       line-height: 1;
     }
@@ -282,17 +282,35 @@
     localStorage.setItem(LS_WAKE, JSON.stringify({ n: wakeNum, ts: Date.now() }));
   }
 
-  function chime() {
-    if (!sndOn) return;
+  function ensureAudio() {
     try {
-      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = actx.createOscillator(), g = actx.createGain();
-      o.connect(g); g.connect(actx.destination);
-      o.type = 'sine'; o.frequency.value = 440;
-      g.gain.setValueAtTime(0.25, actx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.2);
-      o.start(); o.stop(actx.currentTime + 0.25);
+      if (!actx) {
+        actx = new (window.AudioContext || window.webkitAudioContext)();
+        // Unlock iOS: play a silent buffer during the user gesture
+        const buf = actx.createBuffer(1, 1, 22050);
+        const src = actx.createBufferSource();
+        src.buffer = buf;
+        src.connect(actx.destination);
+        src.start();
+      }
+      if (actx.state === 'suspended') actx.resume();
     } catch {}
+  }
+
+  function chime() {
+    if (!sndOn || !actx) return;
+    const play = () => {
+      try {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.connect(g); g.connect(actx.destination);
+        o.type = 'sine'; o.frequency.value = 440;
+        g.gain.setValueAtTime(0.25, actx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.2);
+        o.start(); o.stop(actx.currentTime + 0.25);
+      } catch {}
+    };
+    if (actx.state === 'suspended') actx.resume().then(play);
+    else play();
   }
 
   function pulse() {
@@ -342,6 +360,7 @@
   function go(s) { state = s; app.dataset.state = s; }
 
   function startCountdown() {
+    ensureAudio();
     if (!t0) t0 = Date.now();
     const m = iMin();
     iLblEl.textContent = `Interval ${checks + 1} \u2014 ${m} min`;
