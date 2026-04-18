@@ -56,7 +56,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 16px;
     }
 
     footer {
@@ -77,7 +77,7 @@
       align-items: center;
       width: 100%;
       max-width: 400px;
-      gap: 32px;
+      gap: 16px;
     }
 
     @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
@@ -175,11 +175,17 @@
       background: none;
       border: none;
       color: #7a1a00;
-      font-size: 32px;
+      font-size: 64px;
       cursor: pointer;
-      padding: 8px 10px;
+      padding: 4px 8px;
       -webkit-tap-highlight-color: transparent;
       line-height: 1;
+    }
+
+    .btn-rst {
+      height: 80px;
+      font-size: 22px;
+      letter-spacing: 0.08em;
     }
     .ico:focus-visible { outline: 1px solid #7a1a00; border-radius: 2px; }
 
@@ -234,6 +240,7 @@
     </div>
     <p class="sub">Leave the room. Wait for the full interval.</p>
     <button class="btn" id="btn-cancel">Cancel</button>
+    <button class="btn btn-rst" id="btn-reset">&#x21BA; Reset to start</button>
   </section>
 
   <!-- ELAPSED -->
@@ -256,10 +263,7 @@
 </main>
 
 <footer>
-  <div class="foot-l">
-    <span id="wakeLbl">Wake 1</span>
-    <button class="ico" id="btnReset" aria-label="Reset to start" style="font-size:24px">&#x21BA;</button>
-  </div>
+  <span id="wakeLbl">Wake 1</span>
   <div class="foot-r">
     <button class="ico" id="btnSnd" aria-label="Sound on">&#x266A;</button>
     <button class="ico" id="btnInfo" aria-label="About this timer">i</button>
@@ -401,8 +405,8 @@
   function go(s) { state = s; app.dataset.state = s; }
 
   function updateCarousel() {
-    carPrev.textContent = iIdx > 0 ? IVLS[iIdx - 1] + 'm' : '';
-    carNext.textContent = iIdx < IVLS.length - 1 ? IVLS[iIdx + 1] + 'm' : '';
+    carPrev.textContent = iIdx > 0 ? `\u2039 ${IVLS[iIdx - 1]}m` : '';
+    carNext.textContent = iIdx < IVLS.length - 1 ? `${IVLS[iIdx + 1]}m \u203A` : '';
   }
 
   function swipeTo(idx) {
@@ -524,7 +528,7 @@
 
   carPrev.addEventListener('click', () => swipeTo(iIdx - 1));
   carNext.addEventListener('click', () => swipeTo(iIdx + 1));
-  document.getElementById('btnReset').addEventListener('click', doReset);
+  document.getElementById('btn-reset').addEventListener('click', doReset);
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
