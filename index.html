@@ -25,7 +25,7 @@
     #notice {
       background: #050100;
       border-bottom: 1px solid #200800;
-      color: #3d0d00;
+      color: #621600;
       font-size: 13px;
       font-weight: 300;
       padding: 10px 24px;
@@ -38,7 +38,7 @@
     #notice-x {
       background: none;
       border: none;
-      color: #3d0d00;
+      color: #621600;
       font-size: 18px;
       cursor: pointer;
       flex-shrink: 0;
@@ -61,7 +61,7 @@
       align-items: center;
       padding: 14px 24px;
       padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
-      color: #3d0d00;
+      color: #621600;
       font-size: 12px;
       font-weight: 300;
     }
@@ -109,7 +109,7 @@
       font-size: 16px;
       font-weight: 300;
       line-height: 1.5;
-      color: #3d0d00;
+      color: #621600;
       text-align: center;
     }
 
@@ -145,14 +145,14 @@
     .ico {
       background: none;
       border: none;
-      color: #3d0d00;
+      color: #621600;
       font-size: 32px;
       cursor: pointer;
       padding: 8px 10px;
       -webkit-tap-highlight-color: transparent;
       line-height: 1;
     }
-    .ico:focus-visible { outline: 1px solid #3d0d00; border-radius: 2px; }
+    .ico:focus-visible { outline: 1px solid #621600; border-radius: 2px; }
 
     /* pulse animation */
     @keyframes bg-pulse {
@@ -323,7 +323,10 @@
 
   async function lockScreen() {
     if (!navigator.wakeLock) return;
-    try { wl = await navigator.wakeLock.request('screen'); } catch {}
+    try {
+      wl = await navigator.wakeLock.request('screen');
+      wl.addEventListener('release', () => { wl = null; });
+    } catch {}
   }
 
   function unlockScreen() {
