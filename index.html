@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Extinction Timer</title>
+  <style>
+    /* reset */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; }
+
+    body {
+      min-height: 100dvh;
+      background: #000;
+      color: #7a1a00;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-text-size-adjust: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* layout */
+    #notice {
+      background: #050100;
+      border-bottom: 1px solid #200800;
+      color: #3d0d00;
+      font-size: 13px;
+      font-weight: 300;
+      padding: 10px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    #notice.hidden { display: none; }
+    #notice-x {
+      background: none;
+      border: none;
+      color: #3d0d00;
+      font-size: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+      padding: 0;
+      line-height: 1;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 24px;
+      padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+      color: #3d0d00;
+      font-size: 12px;
+      font-weight: 300;
+    }
+
+    /* sections */
+    .sec {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 400px;
+      gap: 32px;
+    }
+
+    @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+    [data-state="idle"]      .sec-idle,
+    [data-state="countdown"] .sec-countdown,
+    [data-state="elapsed"]   .sec-elapsed,
+    [data-state="complete"]  .sec-complete {
+      display: flex;
+      animation: fadein 0.3s ease-out;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      [data-state] .sec { animation: none; }
+    }
+
+    /* typography */
+    .lbl {
+      font-size: 20px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .big {
+      font-size: 96px;
+      font-weight: 200;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .sub {
+      font-size: 16px;
+      font-weight: 300;
+      line-height: 1.5;
+      color: #3d0d00;
+      text-align: center;
+    }
+
+    /* buttons */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 56px;
+      border: 1px solid #5a1400;
+      background: transparent;
+      color: #8f2000;
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      border-radius: 3px;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .btn:active { background: #1a0500; }
+    .btn:focus-visible { outline: 1px solid #5a1400; outline-offset: 2px; }
+
+    .stack { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+
+    /* footer icons */
+    .foot-r { display: flex; gap: 4px; }
+
+    .ico {
+      background: none;
+      border: none;
+      color: #3d0d00;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 12px 10px;
+      -webkit-tap-highlight-color: transparent;
+      line-height: 1;
+    }
+    .ico:focus-visible { outline: 1px solid #3d0d00; border-radius: 2px; }
+
+    /* pulse animation */
+    @keyframes bg-pulse {
+      0%   { background: #000; }
+      40%  { background: #2a0800; }
+      100% { background: #000; }
+    }
+
+    main.pulsing { animation: bg-pulse 1.5s ease-out; }
+
+    @media (prefers-reduced-motion: reduce) {
+      main.pulsing { animation: none; background: #2a0800; }
+    }
+
+    /* screen reader only */
+    #live {
+      position: absolute;
+      width: 1px; height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<div id="notice">
+  Set your phone brightness to minimum before using.
+  <button id="notice-x" aria-label="Dismiss">&#x2715;</button>
+</div>
+
+<span id="live" aria-live="assertive" aria-atomic="true"></span>
+
+<main id="app" data-state="idle">
+
+  <!-- IDLE -->
+  <section class="sec sec-idle" aria-label="Ready">
+    <p class="lbl">Ready</p>
+    <p class="sub">Tap to start a check interval</p>
+    <button class="btn" id="btn-start">Start</button>
+  </section>
+
+  <!-- COUNTDOWN -->
+  <section class="sec sec-countdown" aria-label="Countdown">
+    <p class="sub" id="iLabel">Interval 1 &#x2014; 2 min</p>
+    <p class="big" id="clock" role="timer" aria-label="Time remaining">02:00</p>
+    <p class="sub">Leave the room. Wait for the full interval.</p>
+    <button class="btn" id="btn-cancel">Cancel</button>
+  </section>
+
+  <!-- ELAPSED -->
+  <section class="sec sec-elapsed" aria-label="Time to check">
+    <p class="lbl">Time to check</p>
+    <p class="sub">Brief pat, reassure, leave. Keep it boring.</p>
+    <div class="stack">
+      <button class="btn" id="btn-check">Check done &#x2014; next interval</button>
+      <button class="btn" id="btn-asleep">Baby asleep &#x2014; end wake</button>
+    </div>
+  </section>
+
+  <!-- COMPLETE -->
+  <section class="sec sec-complete" aria-label="Wake ended">
+    <p class="lbl">Wake ended</p>
+    <p class="sub" id="summary"></p>
+    <button class="btn" id="btn-next">Ready for next wake</button>
+  </section>
+
+</main>
+
+<footer>
+  <span id="wakeLbl">Wake 1</span>
+  <div class="foot-r">
+    <button class="ico" id="btnSnd" aria-label="Sound on">&#x266A;</button>
+    <button class="ico" id="btnInfo" aria-label="About this timer">i</button>
+  </div>
+</footer>
+
+<script>
+  const IVLS   = [2, 4, 6, 8, 10];
+  const LS_SND  = 'ext-snd';
+  const LS_WAKE = 'ext-wake';
+  const LS_DIM  = 'ext-dim';
+  const T12H    = 43200000;
+
+  let state  = 'idle';
+  let iIdx   = 0;      // current interval index
+  let checks = 0;      // completed checks this wake
+  let wakeNum = 1;
+  let sndOn  = true;
+  let endTs  = 0;      // countdown target timestamp
+  let t0     = null;   // wake start time
+  let ticker = null;
+  let wl     = null;   // WakeLockSentinel
+  let actx   = null;   // AudioContext
+
+  const app     = document.getElementById('app');
+  const live    = document.getElementById('live');
+  const clockEl = document.getElementById('clock');
+  const iLblEl  = document.getElementById('iLabel');
+  const sumEl   = document.getElementById('summary');
+  const wkLbl   = document.getElementById('wakeLbl');
+  const btnSnd  = document.getElementById('btnSnd');
+  const notice  = document.getElementById('notice');
+
+  function iMin() { return IVLS[Math.min(iIdx, IVLS.length - 1)]; }
+
+  function fmt(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  }
+
+  function say(msg) {
+    live.textContent = '';
+    requestAnimationFrame(() => { live.textContent = msg; });
+  }
+
+  function load() {
+    sndOn = localStorage.getItem(LS_SND) !== 'false';
+    try {
+      const w = JSON.parse(localStorage.getItem(LS_WAKE));
+      wakeNum = (w && w.n && Date.now() - w.ts < T12H) ? w.n : 1;
+    } catch { wakeNum = 1; }
+    if (localStorage.getItem(LS_DIM) === '1') notice.classList.add('hidden');
+  }
+
+  function saveWake() {
+    localStorage.setItem(LS_WAKE, JSON.stringify({ n: wakeNum, ts: Date.now() }));
+  }
+
+  function chime() {
+    if (!sndOn) return;
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.connect(g); g.connect(actx.destination);
+      o.type = 'sine'; o.frequency.value = 440;
+      g.gain.setValueAtTime(0.25, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.2);
+      o.start(); o.stop(actx.currentTime + 0.25);
+    } catch {}
+  }
+
+  function pulse() {
+    app.classList.remove('pulsing');
+    void app.offsetWidth;
+    app.classList.add('pulsing');
+    const dur = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 300 : 1600;
+    setTimeout(() => app.classList.remove('pulsing'), dur);
+  }
+
+  async function lockScreen() {
+    if (!navigator.wakeLock) return;
+    try { wl = await navigator.wakeLock.request('screen'); } catch {}
+  }
+
+  function unlockScreen() {
+    if (wl) { wl.release().catch(() => {}); wl = null; }
+  }
+
+  function startTick() {
+    clearInterval(ticker);
+    ticker = setInterval(tick, 250);
+    tick();
+  }
+
+  function stopTick() { clearInterval(ticker); ticker = null; }
+
+  function tick() {
+    const rem = endTs - Date.now();
+    if (rem <= 0) {
+      stopTick();
+      clockEl.textContent = '00:00';
+      onElapsed();
+    } else {
+      clockEl.textContent = fmt(rem);
+    }
+  }
+
+  function onElapsed() {
+    chime();
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    pulse();
+    go('elapsed');
+    say('Time to check. Brief pat, reassure, leave.');
+  }
+
+  function go(s) { state = s; app.dataset.state = s; }
+
+  function startCountdown() {
+    if (!t0) t0 = Date.now();
+    const m = iMin();
+    iLblEl.textContent = `Interval ${checks + 1} \u2014 ${m} min`;
+    endTs = Date.now() + m * 60000;
+    go('countdown');
+    startTick();
+    lockScreen();
+    say(`Interval ${checks + 1}, ${m} minutes. Leave the room.`);
+  }
+
+  function doCancel() {
+    stopTick();
+    unlockScreen();
+    go('idle');
+    say('Cancelled.');
+  }
+
+  function doCheck() {
+    checks++;
+    iIdx = Math.min(iIdx + 1, IVLS.length - 1);
+    startCountdown();
+  }
+
+  function doAsleep() {
+    checks++;
+    stopTick();
+    unlockScreen();
+    const mins = Math.round((Date.now() - t0) / 60000);
+    sumEl.textContent = `Total: ${mins} min over ${checks} check${checks !== 1 ? 's' : ''}`;
+    go('complete');
+    say(`Wake ended. ${mins} minutes, ${checks} checks.`);
+  }
+
+  function doNext() {
+    wakeNum++;
+    saveWake();
+    iIdx = 0; checks = 0; t0 = null;
+    wkLbl.textContent = `Wake ${wakeNum}`;
+    go('idle');
+    say(`Ready for wake ${wakeNum}.`);
+  }
+
+  function toggleSnd() {
+    sndOn = !sndOn;
+    localStorage.setItem(LS_SND, sndOn);
+    updateSndBtn();
+  }
+
+  function updateSndBtn() {
+    btnSnd.textContent = sndOn ? '\u266A' : '\u2715';
+    btnSnd.setAttribute('aria-label', sndOn ? 'Sound on' : 'Sound off');
+  }
+
+  document.getElementById('btn-start').addEventListener('click', startCountdown);
+  document.getElementById('btn-cancel').addEventListener('click', doCancel);
+  document.getElementById('btn-check').addEventListener('click', doCheck);
+  document.getElementById('btn-asleep').addEventListener('click', doAsleep);
+  document.getElementById('btn-next').addEventListener('click', doNext);
+  btnSnd.addEventListener('click', toggleSnd);
+
+  document.getElementById('btnInfo').addEventListener('click', () => {
+    alert('Hiscock schedule: 2, 4, 6, 8, 10, 10+ min.\nEach new waking restarts from 2 min.\nNot medical advice \u2014 use as directed by your health professional.');
+  });
+
+  document.getElementById('notice-x').addEventListener('click', () => {
+    notice.classList.add('hidden');
+    localStorage.setItem(LS_DIM, '1');
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === ' ' || e.key === 'Enter') {
+      if (state === 'idle')     { e.preventDefault(); startCountdown(); }
+      if (state === 'elapsed')  { e.preventDefault(); doCheck(); }
+      if (state === 'complete') { e.preventDefault(); doNext(); }
+    }
+    if (e.key === 'Escape' && state === 'countdown') doCancel();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      if (state === 'countdown') tick();
+      if (state === 'countdown' && !wl) lockScreen();
+    }
+  });
+
+  load();
+  wkLbl.textContent = `Wake ${wakeNum}`;
+  updateSndBtn();
+</script>
+</body>
+</html>
