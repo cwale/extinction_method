@@ -231,22 +231,22 @@
 </footer>
 
 <script>
-  const IVLS   = [2, 4, 6, 8, 10];
+  const IVLS    = [2, 4, 6, 8, 10];
   const LS_SND  = 'ext-snd';
   const LS_WAKE = 'ext-wake';
   const LS_DIM  = 'ext-dim';
   const T12H    = 43200000;
 
-  let state  = 'idle';
-  let iIdx   = 0;      // current interval index
-  let checks = 0;      // completed checks this wake
+  let state   = 'idle';
+  let iIdx    = 0;
+  let checks  = 0;
   let wakeNum = 1;
-  let sndOn  = true;
-  let endTs  = 0;      // countdown target timestamp
-  let t0     = null;   // wake start time
-  let ticker = null;
-  let wl     = null;   // WakeLockSentinel
-  let actx   = null;   // AudioContext
+  let sndOn   = true;
+  let endTs   = 0;
+  let t0      = null;
+  let ticker  = null;
+  let wl      = null;
+  let actx    = null;
 
   const app     = document.getElementById('app');
   const live    = document.getElementById('live');
