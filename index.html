@@ -6,6 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Extinction">
+  <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#000000">
   <title>Extinction Timer</title>
   <style>
@@ -106,6 +107,7 @@
       font-weight: 200;
       font-variant-numeric: tabular-nums;
       line-height: 1;
+      flex-shrink: 0;
     }
 
     .sub {
@@ -142,7 +144,31 @@
 
     .stack { display: flex; flex-direction: column; gap: 16px; width: 100%; }
 
-    /* footer icons */
+    /* carousel */
+    .carousel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      touch-action: pan-y;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .car-side {
+      flex: 1;
+      font-size: 26px;
+      font-weight: 200;
+      font-variant-numeric: tabular-nums;
+      opacity: 0.3;
+      text-align: center;
+      line-height: 1;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* footer */
+    .foot-l { display: flex; align-items: center; gap: 10px; }
     .foot-r { display: flex; gap: 4px; }
 
     .ico {
@@ -201,7 +227,11 @@
   <!-- COUNTDOWN -->
   <section class="sec sec-countdown" aria-label="Countdown">
     <p class="sub" id="iLabel">Interval 1 &#x2014; 2 min</p>
-    <p class="big" id="clock" role="timer" aria-label="Time remaining">02:00</p>
+    <div class="carousel" id="carousel">
+      <p class="car-side" id="carPrev"></p>
+      <p class="big" id="clock" role="timer" aria-label="Time remaining">02:00</p>
+      <p class="car-side" id="carNext"></p>
+    </div>
     <p class="sub">Leave the room. Wait for the full interval.</p>
     <button class="btn" id="btn-cancel">Cancel</button>
   </section>
@@ -226,7 +256,10 @@
 </main>
 
 <footer>
-  <span id="wakeLbl">Wake 1</span>
+  <div class="foot-l">
+    <span id="wakeLbl">Wake 1</span>
+    <button class="ico" id="btnReset" aria-label="Reset to start" style="font-size:24px">&#x21BA;</button>
+  </div>
   <div class="foot-r">
     <button class="ico" id="btnSnd" aria-label="Sound on">&#x266A;</button>
     <button class="ico" id="btnInfo" aria-label="About this timer">i</button>
@@ -259,6 +292,8 @@
   const wkLbl   = document.getElementById('wakeLbl');
   const btnSnd  = document.getElementById('btnSnd');
   const notice  = document.getElementById('notice');
+  const carPrev = document.getElementById('carPrev');
+  const carNext = document.getElementById('carNext');
 
   function iMin() { return IVLS[Math.min(iIdx, IVLS.length - 1)]; }
 
@@ -365,16 +400,40 @@
 
   function go(s) { state = s; app.dataset.state = s; }
 
+  function updateCarousel() {
+    carPrev.textContent = iIdx > 0 ? IVLS[iIdx - 1] + 'm' : '';
+    carNext.textContent = iIdx < IVLS.length - 1 ? IVLS[iIdx + 1] + 'm' : '';
+  }
+
+  function swipeTo(idx) {
+    if (idx < 0 || idx >= IVLS.length || state !== 'countdown') return;
+    iIdx = idx;
+    const m = iMin();
+    iLblEl.textContent = `Interval ${iIdx + 1} \u2014 ${m} min`;
+    endTs = Date.now() + m * 60000;
+    updateCarousel();
+    say(`${m} minutes.`);
+  }
+
+  function doReset() {
+    stopTick();
+    unlockScreen();
+    iIdx = 0; checks = 0; t0 = null;
+    go('idle');
+    say('Reset. Ready to start.');
+  }
+
   function startCountdown() {
     ensureAudio();
     if (!t0) t0 = Date.now();
     const m = iMin();
-    iLblEl.textContent = `Interval ${checks + 1} \u2014 ${m} min`;
+    iLblEl.textContent = `Interval ${iIdx + 1} \u2014 ${m} min`;
     endTs = Date.now() + m * 60000;
     go('countdown');
     startTick();
     lockScreen();
-    say(`Interval ${checks + 1}, ${m} minutes. Leave the room.`);
+    updateCarousel();
+    say(`Interval ${iIdx + 1}, ${m} minutes. Leave the room.`);
   }
 
   function doCancel() {
@@ -443,7 +502,29 @@
       if (state === 'complete') { e.preventDefault(); doNext(); }
     }
     if (e.key === 'Escape' && state === 'countdown') doCancel();
+    if (e.key === 'ArrowLeft'  && state === 'countdown') swipeTo(iIdx - 1);
+    if (e.key === 'ArrowRight' && state === 'countdown') swipeTo(iIdx + 1);
   });
+
+  // Swipe to change interval during countdown
+  let sx = null, sy = null;
+  const carouselEl = document.getElementById('carousel');
+  carouselEl.addEventListener('touchstart', e => {
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+  }, { passive: true });
+  carouselEl.addEventListener('touchend', e => {
+    if (sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      swipeTo(dx < 0 ? iIdx + 1 : iIdx - 1);
+    }
+    sx = null;
+  }, { passive: true });
+
+  carPrev.addEventListener('click', () => swipeTo(iIdx - 1));
+  carNext.addEventListener('click', () => swipeTo(iIdx + 1));
+  document.getElementById('btnReset').addEventListener('click', doReset);
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
