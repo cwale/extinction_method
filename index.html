@@ -428,14 +428,12 @@
   function doReset() {
     stopTick();
     unlockScreen();
-    if (t0 !== null) {
-      wakeNum++;
-      saveWake();
-      wkLbl.textContent = `Wake ${wakeNum}`;
-    }
+    wakeNum = 1;
+    saveWake();
+    wkLbl.textContent = `Wake ${wakeNum}`;
     iIdx = 0; checks = 0; t0 = null;
     go('idle');
-    say('Reset.');
+    say('Reset to start.');
   }
 
   function startCountdown() {
